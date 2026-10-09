@@ -1,4 +1,3 @@
-#include <ostream>
 #include <vector>
 #include <fstream>
 #include <print>
@@ -75,13 +74,30 @@ void interpret(const std::vector<mpq_class>& fs, mpq_class n)
 {
 	constexpr auto comp = 227384373333196800;
 
+	// Buffer string rendering for performance
+	std::string buffer;
+	uint buffered = 0;
+
 	mpq_class nf;
-	for (size_t i = 0; i < fs.size();) {
+	for (size_t i = 0; i < fs.size();) { [[likely]]
 		nf = fs[i] * n;
 		if (nf.get_den() == 1) { [[unlikely]]
 			n.swap(nf);
-			std::println("{}", n.get_str());
 			i = 0;
+
+			// Number should be small enough to still preserver the
+			// illusion of no buffer existing. That is: it should
+			// look smooth because that's cool and good
+			if (buffered > 500) {
+				std::print("{}", buffer);
+				buffered = 0;
+				buffer.clear();
+			} else {
+				buffer += n.get_str();
+				buffer += '\n';
+				buffered++;
+			}
+
 
 			if (n > comp)
 				break;
